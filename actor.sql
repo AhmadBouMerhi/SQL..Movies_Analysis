@@ -8,7 +8,7 @@ SELECT first_name, last_name FROM sakila.actor;
 -- 1b. Display the first and last name of each actor in a single column in upper case letters. 
 SELECT CONCAT(first_name, " ", last_name) AS "ACTOR NAME" FROM SAKILA.ACTOR;
 
--- 2a. You need to find the ID number, first name, and last name of an actor, of whom you know only the first name, "Joe." 
+-- 2a. Find the ID number, first name, and last name of an actor, of whom you know only the first name, "Joe." 
 SELECT actor_id, first_name, last_name FROM sakila.actor WHERE first_name = "JOE";
 
 -- 2b. Find all actors whose last name contain the letters GEN:
@@ -23,17 +23,22 @@ Select country_id, country FROM sakila.country Where country IN ('Afghanistan', 
 -- 3a. Create a column in the table actor named description and use the data type BLOB 
 ALTER Table sakila.actor ADD newDescription BLOB;
 
--- Display the data to c-eck
+-- Display the data to check
 SELECT * from actor;
 
 -- 3b. Delete the description column.
 ALTER TABLE actor DROP newDescription;
 
 -- 4a. List the last names of actors, as well as how many actors have that last name.
-SELECT last_name, COUNT(last_name) from sakila.actor GROUP BY last_name;
+SELECT last_name, 
+COUNT(last_name) from sakila.actor 
+GROUP BY last_name;
 
 -- 4b. List last names of actors and the number of actors but only for names that are shared by at least two actors
-SELECT last_name, COUNT(last_name) from sakila.actor GROUP BY last_name HAVING COUNT(last_name)>=2;
+SELECT last_name, 
+COUNT(last_name) from sakila.actor 
+GROUP BY last_name
+ HAVING COUNT(last_name)>=2;
 
 -- 4c. fix the actor name GROUCHO WILLIAMS to HARPO WILLIAMS
 UPDATE sakila.actor SET first_name = REPLACE(first_name, "GROUCHO", "HARPO") WHERE last_name = "WILLIAMS";
@@ -45,10 +50,13 @@ UPDATE sakila.actor SET first_name = REPLACE(first_name, "HARPO", "GROUCHO") WHE
 SHOW CREATE TABLE address;
 
 -- 6a. Use JOIN to display the first and last names, as well as the address, of each staff member. Use the tables staff and address:
-SELECT staff.first_name, staff.last_name, address.address FROM ADDRESS join staff on (address.address_id=staff.address_id);
+SELECT staff.first_name, staff.last_name, address.address FROM ADDRESS 
+join staff on (address.address_id=staff.address_id);
 
 -- 6b. Use JOIN to display the total amount rung up by each staff member in August of 2005. Use tables staff and payment.
-SELECT staff_id, SUM(amount) 'Total amount' FROM payment join staff using (staff_id) WHERE payment_date LIKE '2005-08%' group by staff_id;
+SELECT staff_id, SUM(amount) 'Total amount' FROM payment 
+join staff using (staff_id) 
+WHERE payment_date LIKE '2005-08%' group by staff_id;
           
 -- 6c. List each film and the number of actors who are listed for that film. Use tables film_actor and film. Use inner join.
 SELECT film.title, film_id, count(actor_id) 
@@ -56,7 +64,8 @@ from film_actor
 Join film Using(film_id) 
 group by film_id;
 
--- 6d. Run a query to determine how many copies there are of the film Hunchback Impossible in inventory
+
+-- 6d. Find how many copies of the film Hunchback Impossible exist in inventory system
 SELECT * FROM film;
 SELECT * FROM inventory;
 SELECT film.title, COUNT(inventory.inventory_id) 
@@ -64,6 +73,7 @@ FROM film
 JOIN inventory USING(film_id)
 WHERE film.title="Hunchback Impossible"
 GROUP BY film.film_id;
+
 
 -- 6e. Using the tables payment and customer and the JOIN command, list the total paid by each customer. List the customers alphabetically by last name
 SELECT * FROM payment;
@@ -95,13 +105,13 @@ SELECT film_id FROM film
 WHERE title = "Alone Trip"
 ));
 
--- 7c. Use joins to retrieve the names and email addresses of all Canadian customers
+-- 7c. Retrieve the names and email addresses of all Canadian customers
 SELECT * from address;
 SELECT * from city;
 SELECT * from country;
 SELECT * from customer;
 
-SELECT c.customer_id, CONCAT(c.first_name, " ", c.last_name) "Customer", email FROM customer c 
+SELECT c.customer_id, c.first_name, c.last_name, email FROM customer c 
 JOIN address USING(address_id)
 JOIN city USING(city_id)
 JOIN country USING(country_id)
@@ -111,16 +121,7 @@ WHERE country="Canada";
 SELECT * FROM film;
 SELECT * FROM category;
 SELECT * FROM film_category;
--- Subqueries method
-SELECT film_id, title FROM film
-WHERE film_id IN(
-SELECT film_id FROM film_category
-WHERE category_id IN(
-SELECT category_id FROM category
-WHERE name="Family"
-));
 
--- Joins method
 SELECT film_id, title FROM film
 JOIN film_category USING(film_id)
 JOIN category USING(category_id)
@@ -130,7 +131,7 @@ WHERE name="Family";
 SELECT * FROM film;
 SELECT * FROM inventory;
 SELECT * FROM rental;
--- Joins method
+
 SELECT film_id, title, COUNT(film_id) FROM film
 JOIN inventory USING(film_id)
 JOIN rental USING(inventory_id)
@@ -141,19 +142,54 @@ ORDER BY COUNT(film_id) DESC;
 SELECT * FROM store;
 SELECT * FROM payment;
 SELECT * FROM staff;
--- Subqueries method
-SELECT staff_id, SUM(amount) FROM payment
-WHERE staff_id IN(
-SELECT staff_id FROM staff
-WHERE store_id IN(
-SELECT store_id FROM store
-))
-GROUP BY staff_id;
--- Joins method
+
 SELECT staff_id, SUM(amount) FROM payment
 JOIN staff USING(staff_id)
 JOIN store USING(store_id)
 GROUP BY staff_id;
 
+ -- 7g. Write a query to display for each store its store ID, city, and country.
+SELECT * FROM store;
+SELECT * FROM address;
+SELECT * FROM city;
+SELECT * FROM country;
 
+SELECT store_id, city, country FROM store
+JOIN address USING(address_id)
+JOIN city USING(city_id)
+JOIN country USING(country_id);
+
+-- 7h. List the top five genres in gross revenue in descending order. (Hint: you may need to use the following tables: category, film_category, inventory, payment, and rental.)
+SELECT * FROM category;
+SELECT * FROM film_category;
+SELECT * FROM inventory;
+SELECT * FROM payment;
+SELECT * FROM rental;
+
+SELECT name, SUM(amount) FROM category
+JOIN film_category USING(category_id)
+JOIN inventory USING(film_id)
+JOIN rental USING(inventory_id)
+JOIN payment USING(rental_id)
+GROUP BY name
+ORDER BY SUM(amount) DESC
+LIMIT 5;
+
+-- 8a.Use the solution from the problem above to create a view. If you haven't solved 7h, you can substitute another query to create a view.
+CREATE VIEW top_five_genres AS
+SELECT name, SUM(amount) FROM category
+JOIN film_category USING(category_id)
+JOIN inventory USING(film_id)
+JOIN rental USING(inventory_id)
+JOIN payment USING(rental_id)
+GROUP BY name
+ORDER BY SUM(amount) DESC
+LIMIT 5;
+
+-- 8b. Display the view created in 8a
+SELECT * FROM top_five_genres;
+
+-- 8c. Write a query to delete the view top_five_genres (try to display top_five_genres to double-check)
+DROP VIEW top_five_genres;
+SELECT * FROM top_five_genres;
 
